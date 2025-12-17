@@ -1,0 +1,23 @@
+**Módulo A (Entrada & Validação - O Porteiro)**
+
+1. Json recebeido pelo backend:
+- data: date
+- id_cliente: number
+- horario: time
+- id_barbeiro: number
+- id_servico: number
+- confirmado: 0 (false)
+
+** Módulo B - Validações (Verificar colisão de horários) **
+
+1. Regras de Negócio:
+- Entrada: lista_agendamentos, novo_pedido
+- Saída Esperada (Sucesso): ? (true ou false)
+- Saída Esperada (Erro): ? (true ou false)
+
+** Módulo C - (Se B -> "OK") **
+
+1. Armazena no SQLite (pronto para migração para PostgreeSQL)
+
+
+
