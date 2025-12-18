@@ -2,29 +2,28 @@
 
 def verificar_disponibilidade(agendamentos_existentes, novo_pedido):
     """
-    Módulo B: Lógica Pura
-    Responsabilidade: Verificar se há colisão de horário.
-    Input: 
-        - agendamentos_existentes: Lista de dicionários [{'horario': '14:00'}, ...]
-        - novo_pedido: Dicionário {'horario': '14:00'}
-    Output:
-        - Dicionário {'aprovado': bool, 'razao': str}
+    Módulo B: Lógica Pura (Evoluída)
+    Responsabilidade: Verificar colisão por BARBEIRO.
     """
     
-    # 1. Extraia o horário desejado do novo_pedido
     data_desejada = novo_pedido.get('data')
     horario_desejado = novo_pedido.get('horario')
+    barbeiro_desejado = novo_pedido.get('id_barbeiro')
     
-    if not horario_desejado or not data_desejada:
-        return {"aprovado": False, "razao": "Data e Horário são obrigatórios."}
+    # 1. Validação de Sanidade (Cérebro não processa dados incompletos)
+    if not all([data_desejada, horario_desejado, barbeiro_desejado]):
+        return {"aprovado": False, "razao": "Dados insuficientes para marcar agendamento."}
     
-    # 2. Itere sobre a lista de agendamentos_existentes
-    # SE encontrar um horário igual ao desejado -> Retorne Erro
+    # 2. Busca por conflito específico
+    for agendamento in agendamentos_existentes:
+        mesmo_horario = agendamento['horario'] == horario_desejado
+        mesma_data = agendamento['data'] == data_desejada
+        mesmo_barbeiro = agendamento['id_barbeiro'] == barbeiro_desejado
+        
+        if mesmo_horario and mesma_data and mesmo_barbeiro:
+            return {
+                "aprovado": False, 
+                "razao": f"O barbeiro {barbeiro_desejado} já possui cliente neste horário."
+            }
     
-    for h in agendamentos_existentes:
-        if(horario_desejado == h['horario'] and data_desejada == h['data']):
-            return {"aprovado": False, "razao": "Data ou Horário indisponível"}
-    
-    # 3. Se o loop terminar sem colisão -> Retorne Sucesso
-    return {"aprovado": True, "razao": "Horário disponível"}
-
+    return {"aprovado": True, "razao": "Horário disponível para este profissional."}

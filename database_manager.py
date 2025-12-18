@@ -8,11 +8,12 @@ def get_db_connection():
     conn.row_factory = sqlite3.Row
     return conn
 
-def ler_todos_agendamentos():
+def init_db():
+    """
+    Cria o esquema do banco de dados. 
+    Deve ser chamada na inicialização do App.
+    """
     conn = get_db_connection()
-    
-    # --- BLINDAGEM: Cria a tabela se ela não existir ---
-    # Isso impede o erro "no such table" se você deletar o arquivo .db
     conn.execute("""
         CREATE TABLE IF NOT EXISTS agendamentos (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -23,27 +24,21 @@ def ler_todos_agendamentos():
             id_servico INTEGER
         );
     """)
-    # ---------------------------------------------------
+    conn.commit()
+    conn.close()
+    print("✅ Banco de dados inicializado com sucesso.")
 
+def ler_todos_agendamentos():
+    conn = get_db_connection()
+    # Note como a função agora foca apenas em sua responsabilidade: LER
     agendamentos = conn.execute('SELECT * FROM agendamentos').fetchall()
     conn.close()
+    # Abaixo retornamos uma lista de dicionários para facilitar o uso dos dados
     return [dict(row) for row in agendamentos]
 
 def inserir_agendamento(cliente_nome, data, horario, id_barbeiro, id_servico):
     conn = get_db_connection()
     try:
-        # Garante que a tabela existe antes de tentar inserir também
-        conn.execute("""
-            CREATE TABLE IF NOT EXISTS agendamentos (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                cliente_nome TEXT NOT NULL,
-                data TEXT NOT NULL,
-                horario TEXT NOT NULL,
-                id_barbeiro INTEGER,
-                id_servico INTEGER
-            );
-        """)
-        
         conn.execute(
             'INSERT INTO agendamentos (cliente_nome, data, horario, id_barbeiro, id_servico) VALUES (?, ?, ?, ?, ?)',
             (cliente_nome, data, horario, id_barbeiro, id_servico)
