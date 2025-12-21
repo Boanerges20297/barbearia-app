@@ -1,64 +1,109 @@
-from asyncio.windows_events import NULL
-from datetime import date
 from flask import Blueprint, request, jsonify
-import sys           # 1. Chame o gerente do sistema
-sys.path.append("..") # 2. Adicione o diretório pai ("..") à lista de lugares onde o Python procura arquivos
+from datetime import date
+import sys
+
+# OBS: Em um projeto real, configuraríamos o PYTHONPATH no ambiente, 
+# mas vou manter o sys.path documentado como débito técnico por enquanto.
+sys.path.append("..") 
+
+# Importações explicitas (Boa prática: saber de onde vem cada função)
 from database_manager import ler_todos_agendamentos, inserir_agendamento
 from logica_agendamento import verificar_disponibilidade
 
-# Definindo o "Departamento"
 agendamento_bp = Blueprint('agendamento', __name__)
 
-def validar_input_agendamentos(dados):
-    campos_obrigatorios = ['id_cliente', 'data','horario']
-    # 1. Verifica se todos os campos existem e não estão vazios
-    for campo in campos_obrigatorios:
-        if campo not in dados or not str(dados[campo].strip()):
-            return False, f"O campo '{campo}' é obrigatório e não pode estar vazio."
-
-
-    # 2. verifica se o id_cliente é um número inteiro positivo
-    if not str(dados['id_cliente']).isdigit():
-        return False, "O 'id_cliente' deve ser um número inteiro positivo."
+# --- MÓDULO A: Camada de Validação e Sanitização ---
+def sanitizar_e_validar_pedido(dados_brutos):
+    """
+    Responsabilidade: Receber o lixo (input bruto), validar regras de tipo
+    e devolver um objeto limpo e pronto para uso (dicionário confiável).
+    """
+    erros = []
     
-    return True, None
+    # 1. Validação de Presença (O que é obrigatório?)
+    campos_obrigatorios = ['id_cliente', 'data', 'horario']
+    for campo in campos_obrigatorios:
+        if campo not in dados_brutos or not str(dados_brutos[campo]).strip():
+            erros.append(f"O campo '{campo}' é obrigatório.")
+
+    # Se já falhou aqui, retorna logo para não processar o resto à toa
+    if erros:
+        return None, erros
+
+    # 2. Validação de Tipo (Type Safety)
+    try:
+        id_cliente = int(dados_brutos['id_cliente'])
+        if id_cliente <= 0:
+            erros.append("O 'id_cliente' deve ser positivo.")
+    except (ValueError, TypeError):
+        erros.append("O 'id_cliente' deve ser um número inteiro.")
+
+    if erros:
+        return None, erros
+
+    # 3. Construção do Objeto Limpo (Sanitização)
+    # Removemos a lógica de 'or' perigosa e usamos valores explícitos
+    pedido_limpo = {
+        "id_cliente": id_cliente, # type: ignore
+        "data": dados_brutos['data'], # Já validamos que existe
+        "horario": dados_brutos['horario'], # Já validamos que existe
+        "id_barbeiro": dados_brutos.get('id_barbeiro', 1), # Default seguro
+        "id_servico": dados_brutos.get('id_servico', 1)    # Default seguro
+    }
+    
+    return pedido_limpo, None
 
 
-# Note que usamos @agendamento_bp.route em vez de @app.route
+# --- MÓDULO C: Rotas e Controle de Fluxo ---
+
 @agendamento_bp.route('/agendamentos', methods=['GET'])
 def listar():
-    lista = ler_todos_agendamentos()
-    return jsonify(lista)
+    try:
+        lista = ler_todos_agendamentos()
+        return jsonify(lista), 200
+    except Exception as e:
+        # Logar o erro real no console para o desenvolvedor
+        print(f"Erro ao listar agendamentos: {e}") 
+        return jsonify({"erro": "Erro interno ao buscar dados."}), 500
 
 @agendamento_bp.route('/agendar', methods=['POST'])
 def criar():
-    data = request.json
-    
-    # --- A BLINDAGEM ACONTECE AQUI ---
-    sucesso, mensagem_erro = validar_input_agendamentos(data)
-    if not sucesso:
-        return jsonify({"erro": "Dados inválidos", "detalhes": mensagem_erro}), 400
-    # ---------------------------------
-    
-    pedido_completo = {
-        "id_cliente": data.get('id_cliente') or 0,
-        "horario": data.get('horario') or '00:00',
-        "data": data.get('data', '2025-01-01') or date.today().isoformat(),
-        "id_barbeiro": data.get('id_barbeiro', 1),
-        "id_servico": data.get('id_servico', 1)
-    }
+    # Bloco de segurança principal
+    try:
+        dados_brutos = request.get_json()
+        if not dados_brutos:
+            return jsonify({"erro": "Payload JSON inválido ou vazio"}), 400
 
-    agendamentos_existentes = ler_todos_agendamentos()
-    resultado = verificar_disponibilidade(agendamentos_existentes, pedido_completo)
+        # 1. Validação (Blindagem)
+        pedido_completo, lista_erros = sanitizar_e_validar_pedido(dados_brutos)
+        
+        if lista_erros:
+            return jsonify({"erro": "Dados inválidos", "detalhes": lista_erros}), 400
 
-    if resultado['aprovado']:
+        # 2. Lógica de Negócio (Módulo B invocado)
+        # Note como a rota não sabe COMO a disponibilidade é verificada, ela apenas pede.
+        agendamentos_existentes = ler_todos_agendamentos()
+        resultado = verificar_disponibilidade(agendamentos_existentes, pedido_completo)
+
+        if not resultado['aprovado']:
+            return jsonify({"erro": "Conflito de agenda", "motivo": resultado['razao']}), 409
+
+        # 3. Persistência (Commit)
         inserir_agendamento(
-            pedido_completo['id_cliente'], 
-            pedido_completo['data'], 
-            pedido_completo['horario'],
-            pedido_completo['id_barbeiro'],
-            pedido_completo['id_servico']
+            pedido_completo['id_cliente'],  # type: ignore
+            pedido_completo['data'],  # type: ignore
+            pedido_completo['horario'], # type: ignore
+            pedido_completo['id_barbeiro'], # type: ignore
+            pedido_completo['id_servico'] # type: ignore
         )
-        return jsonify({"mensagem": "Sucesso!", "detalhes": pedido_completo}), 201
-    else:
-        return jsonify({"erro": resultado['razao']}), 409
+        
+        return jsonify({
+            "mensagem": "Agendamento realizado com sucesso", 
+            "dados": pedido_completo
+        }), 201
+
+    except Exception as e:
+        # Captura qualquer erro inesperado (Banco fora do ar, bug no código, etc)
+        # Em produção, usaríamos uma lib de logging aqui.
+        print(f"ERRO CRÍTICO NA ROTA /agendar: {e}")
+        return jsonify({"erro": "Ocorreu um erro interno no servidor. Tente novamente mais tarde."}), 500
