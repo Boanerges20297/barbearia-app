@@ -2,6 +2,8 @@ from flask import Blueprint, request, jsonify
 from datetime import date
 import sys
 
+from routes.editar_agendamento import editar
+
 # OBS: Em um projeto real, configuraríamos o PYTHONPATH no ambiente, 
 # mas vou manter o sys.path documentado como débito técnico por enquanto.
 sys.path.append("..") 
@@ -11,6 +13,7 @@ from database_manager import ler_todos_agendamentos, inserir_agendamento
 from logica_agendamento import verificar_disponibilidade
 
 agendamento_bp = Blueprint('agendamento', __name__)
+editar_agendamento_bp = Blueprint('editar_agendamento', __name__)
 
 # --- MÓDULO A: Camada de Validação e Sanitização ---
 def sanitizar_e_validar_pedido(dados_brutos):
