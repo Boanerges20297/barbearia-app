@@ -2,7 +2,7 @@ from flask import Blueprint, request, jsonify
 from database_manager import editar_agendamento, ler_todos_agendamentos
 from logica_agendamento import verificar_disponibilidade
 # Importação limpa
-from validators import sanitizar_e_validar_pedido
+from middlewares.validators import sanitizar_e_validar_pedido
 
 editar_agendamento_bp = Blueprint("editar_agendamento", __name__)
 
