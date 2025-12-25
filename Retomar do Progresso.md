@@ -1,34 +1,53 @@
-📝 Registro de Evolução do Projeto - Barbearia App
-Data: 17 de Dezembro de 2025 Status Atual: Fase 3 (Refatoração e Blindagem) - Ciclo 1 Concluído.
+# 📌 Ponto de Retomada: Projeto Agendamento (Flask)
 
-🛠 O que foi implementado hoje:
-Refatoração de Persistência (Módulo C - DRY):
+**Data:** [Data de Hoje]
+**Status:** ✅ Estrutura Base (Skeleton) Funcionando
+**Próxima Fase:** Implementação Lógica das Rotas (Fase 1 e 2)
 
-Extraímos a lógica de criação de tabelas das funções de consulta e inserção.
+---
 
-Implementamos a função init_db() no database_manager.py para centralizar o esquema do banco de dados.
+## 1. O que foi Conquistado (A Base Sólida)
+Superamos a "Paralisia de Configuração" e os erros de importação circular. A arquitetura atual respeita a **Inversão de Dependência**:
 
-Configuramos o app.py para inicializar o banco de dados apenas uma vez na subida do servidor.
+* **`app.py` (O Orquestrador):** Não contém lógica de negócio. Apenas inicializa o Flask, configura o Banco e registra os Blueprints.
+* **`routes/` (Os Especialistas):** Estão isolados em Blueprints, sem depender diretamente da instância global `app`.
+* **`database_manager.py` (A Persistência):** Inicializa o banco de forma independente.
 
-Blindagem do "Porteiro" (Módulo A - Segurança):
+**Teste de Fogo:** O servidor roda (`python app.py`) sem erros de `ImportError` e acessa a porta 5001.
 
-Criamos a função validar_input_agendamento no agendamentos_routes.py.
+---
 
-Implementamos a técnica de Fail-Fast: o sistema agora rejeita requisições com campos vazios ou tipos de dados incorretos (como IDs não numéricos) antes de processar a lógica.
+## 2. A Missão Imediata (Ao abrir o código)
 
-Adicionamos sanitização de strings (.strip()) para evitar erros de comparação por espaços em branco.
+Não comece codificando aleatoriamente. O objetivo é implementar a rota de **Edição de Agendamento** seguindo a metodologia:
 
-Evolução do "Cérebro" (Módulo B - Regras de Negócio):
+### Passo A: Definir o Contrato Funcional (Fase 1)
+Antes de mexer em `routes/editar_agendamento.py`, responda mentalmente ou no papel:
+1.  **Entrada:** O que chega do front-end? (JSON com ID e novos dados?)
+2.  **Processamento:** Quais regras de negócio validam essa edição? (O ID existe? A data é futura?)
+3.  **Saída:** O que devolvemos? (JSON `{success: true}` ou HTML renderizado?)
 
-Atualizamos a verificar_disponibilidade em logica_agendamento.py para suportar múltiplos barbeiros.
+### Passo B: Codificação "Feia" (Fase 2)
+Implementar a lógica apenas para fazer o contrato passar, sem se preocupar com otimização agora.
 
-A colisão agora é específica: o sistema permite agendamentos no mesmo horário, desde que sejam para profissionais diferentes.
+---
 
-📍 Onde paramos:
-O projeto saiu de um estado de "script funcional" para uma "aplicação estruturada".
+## 3. Dívida Técnica (Para a Fase 3 - Refatoração)
+**NÃO ESQUECER:** Existem falhas de segurança propositais no `app.py` que precisam ser corrigidas antes do deploy final:
 
-Código: Está limpo, sem redundâncias no banco e protegido contra inputs maliciosos básicos.
+* [ ] **Segurança Crítica:** A `secret_key` está *hardcoded* (escrita no código). Mover para `.env`.
+* [ ] **Ambiente:** O `debug=True` está fixo. Criar condicional para produção vs. desenvolvimento.
+* [ ] **Validação:** Adicionar `try/except` robusto nas chamadas de banco de dados.
 
-Próximo Passo Sugerido: Implementar Testes de Estresse/Integração para garantir que a lógica de múltiplos barbeiros e a blindagem de input funcionem sob carga, ou avançar para a Interface de Usuário (Frontend) para consumir essas novas validações.
+---
 
-Nota do Arquiteto: "A disciplina na estrutura hoje é a liberdade de escala amanhã."
+## 4. Comandos para Reiniciar
+Para rodar o projeto ao voltar:
+
+```bash
+# 1. Ativar ambiente virtual (se houver)
+# source venv/bin/activate  (Mac/Linux)
+# venv\Scripts\activate     (Windows)
+
+# 2. Rodar a aplicação
+python app.py

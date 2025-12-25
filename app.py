@@ -1,8 +1,7 @@
 # app.py
 from flask import Flask, render_template
-from routes import editar_agendamento
-from routes.agendamentos_routes import agendamento_bp
 from routes.editar_agendamento import editar_agendamento_bp
+from routes.agendamentos_routes import agendamento_bp
 from database_manager import init_db
 
 app = Flask(__name__)
