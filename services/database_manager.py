@@ -72,11 +72,17 @@ def editar_agendamento(id_agendamento, novos_dados):
         raise ValueError("novos_dados deve conter 'data', 'horario', 'id_barbeiro' e 'id_servico'")
     
     try:
-        conn.execute(
+        # Usamos 'cursor' para capturar o resultado da execução
+        cursor = conn.execute(
             'UPDATE agendamentos SET data = ?, horario = ?, id_barbeiro = ?, id_servico = ? WHERE id = ? AND confirmado = 0',
             (novos_dados['data'], novos_dados['horario'], novos_dados['id_barbeiro'], novos_dados['id_servico'], id_agendamento)
         )
+        
         conn.commit()
+        # Verificar se houveram linhas afetadas
+        if cursor.rowcount == 0:
+            return False # Nada foi alterado (ID não existe ou já confirmado)
+        
         return True
     except Exception as e:
         print(f"Erro ao editar no banco: {e}")

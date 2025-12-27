@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify
-from database_manager import editar_agendamento, ler_todos_agendamentos
-from logica_agendamento import verificar_disponibilidade
+from services.database_manager import editar_agendamento, ler_todos_agendamentos
+from services.logica_agendamento import verificar_disponibilidade
 # Importação limpa
 from middlewares.validators import sanitizar_e_validar_pedido
 
