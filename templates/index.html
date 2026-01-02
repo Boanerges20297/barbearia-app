@@ -1,83 +1,40 @@
 <!DOCTYPE html>
 <html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="stylesheet" href="../static/css/index.css" />
     <title>Barbearia System</title>
-    <style>
-        body { font-family: sans-serif; padding: 2rem; }
-        .error { color: red; font-weight: bold; }
-        .success { color: green; font-weight: bold; }
-    </style>
-</head>
-<body>
-
+  </head>
+  <body>
     <h1>Agendar Horário</h1>
     <label for="dataInput">Escolha a Data:</label>
-    <input type="date" id="dataInput" required>
+    <input type="date" id="dataInput" required />
     <label for="horarioInput">Escolha o Horário:</label>
-    <input type="time" id="horarioInput" required>
+    <input type="time" id="horarioInput" required />
     <button onclick="fazerAgendamento()">Confirmar</button>
 
     <div id="container-agendamentos">
-        <ul id="listaAgendamentos"></ul>
+      <ul id="listaAgendamentos"></ul>
     </div>
 
     <p id="feedback" class=""></p>
 
-    <script>
-        async function carregarAgendamentos(){
-            const resposta = await fetch('http://127.0.0.1:5001/agendamentos');
-            const agendamentos = await resposta.json(); // Assíncrono
-            const fragment = document.createDocumentFragment();
-            const lista = document.getElementById('listaAgendamentos');
-            lista.innerHTML = ''; // Limpa a lista antes de adicionar os novos itens
-        
-            for(const agendamento of agendamentos){
-                const li_lista = document.createElement('li');
-                li_lista.textContent = `Data: ${agendamento}, Horário: ${agendamento.horario}, Cliente: ${agendamento.cliente_nome}`;
-                fragment.appendChild(li_lista);
-            }
-            lista.appendChild(fragment);
-        }
-    
-        async function fazerAgendamento() {
-            // 1. Pegar os valores dos inputs do HTML
-            const inputCliente = Math.random() + 1;
-            const inputHorario = document.getElementById('horarioInput').value;
-            const inputData = document.getElementById('dataInput').value; // Essa é a data do calendário
+    <div id="modalEdicao" class="modal">
+      <div class="modal-content">
+        <span class="close" onclick="fecharModal()">&times;</span>
+        <h2>Editar Agendamento</h2>
 
-            // 2. Montar o pacote para enviar (mudamos o nome da variável para evitar conflito)
-            const pacoteEnvio = {
-                id_cliente: inputCliente,
-                horario: inputHorario,
-                data: inputData 
-            };
+        <input type="hidden" id="edit-id" />
 
-            // 3. Enviar para o Back-end
-            const response = await fetch('http://127.0.0.1:5001/agendar', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(pacoteEnvio) // Usamos o novo nome aqui
-            });
+        <label>Nova Data:</label>
+        <input type="date" id="edit-data" required /><br /><br />
 
-            const result = await response.json();
-            const feedbackEl = document.getElementById('feedback');
-            
-            if (response.ok) {
-                feedbackEl.textContent = "Sucesso: " + result.mensagem;
-                feedbackEl.className = 'success';
-                carregarAgendamentos(); // Atualiza a lista na hora
-            } else {
-                feedbackEl.textContent = "Erro: " + result.erro;
-                feedbackEl.className = 'error';
-            }
-            // Limpa a mensagem depois de alguns segundos
-            setTimeout(() => { feedbackEl.textContent = ''; feedbackEl.className = ''; }, 5000);
-        }
+        <label>Novo Horário:</label>
+        <input type="time" id="edit-horario" required /><br /><br />
 
-        carregarAgendamentos();
-    </script>
-</body>
+        <button onclick="confirmarEdicao()">Salvar Alterações</button>
+      </div>
+    </div>
+    <script src="../static/js/index.js"></script>
+  </body>
 </html>

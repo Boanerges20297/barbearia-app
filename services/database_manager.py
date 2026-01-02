@@ -90,14 +90,19 @@ def editar_agendamento(id_agendamento, novos_dados):
     finally:
         conn.close()
 
-def deletar_agendamento(id_agendamento):
+def deletar_agendamento(id_agendamento, id_barbeiro):
     conn = get_db_connection()
     try:
-        conn.execute(
-            'DELETE FROM agendamentos WHERE id = ? AND confirmado = 0',
-            (id_agendamento,)
+        cursor = conn.execute(
+            f'DELETE FROM agendamentos WHERE id = ? AND confirmado = 0 AND id_barbeiro = ?',
+            (id_agendamento, id_barbeiro)
         )
+        
         conn.commit()
+        # Verificar se houveram linhas afetadas
+        if cursor.rowcount == 0:
+            return False # Nada foi alterado (ID não existe ou já confirmado)
+        
         return True
     except Exception as e:
         print(f"Erro ao deletar no banco: {e}")
