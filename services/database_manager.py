@@ -109,3 +109,21 @@ def deletar_agendamento(id_agendamento, id_barbeiro):
         return False
     finally:
         conn.close()
+    
+def confirmar_agendamento(id_agendamento, id_barbeiro):
+    conn = get_db_connection()
+    try:
+        cursor = conn.execute(
+            f"UPDATE agendamentos SET confirmado = 1 WHERE id = ? AND id_barbeiro = ?",
+            (id_agendamento, id_barbeiro)
+        )
+        conn.commit()
+        if cursor.rowcount == 0:
+           return False
+       
+        return True 
+    except Exception as e:
+        print(f"Erro ao confirmar agendamento - {e}")
+        return False
+    finally:
+        conn.close()

@@ -1,5 +1,8 @@
 # app.py
 from flask import Flask, render_template
+from routes import confirmar_agendamento
+from routes.deletar_agendamento import deletar_agendamento_bp
+from routes.confirmar_agendamento import confirmar_agendamento_bp
 from routes.editar_agendamento import editar_agendamento_bp
 from routes.agendamentos_routes import agendamento_bp
 from services.database_manager import init_db
@@ -15,6 +18,8 @@ init_db() # O banco é preparado aqui, uma única vez!
 
 app.register_blueprint(agendamento_bp)
 app.register_blueprint(editar_agendamento_bp)
+app.register_blueprint(deletar_agendamento_bp)
+app.register_blueprint(confirmar_agendamento_bp)
 
 @app.route('/')
 def home():
