@@ -1,26 +1,20 @@
 import json
 from flask import Blueprint, jsonify, request
 from services.database_manager import deletar_agendamento
+from middlewares.validators import identificar_e_validar_autor
 
 deletar_agendamento_bp = Blueprint('deletar_agendamento', __name__)
 
 @deletar_agendamento_bp.route('/deletar-agendamento/<int:id_agendamento>', methods = ['DELETE'])
 def deletar(id_agendamento):
     
-    id_barbeiro = request.headers.get('X-Barbeiro-ID')
+    id_autor, tipo_autor, erro_autor = identificar_e_validar_autor(request.headers)
+    if erro_autor:
+        return jsonify({"erro": erro_autor}), 401
     
-    if not id_barbeiro:
-        return jsonify({"erro": "Identificação do barbeiro ausente"}), 401
+    sucesso = deletar_agendamento(id_agendamento,id_autor, tipo_autor)
     
-    try:
-        result = deletar_agendamento(id_agendamento,id_barbeiro)
-        
-        if result:
-            return jsonify({"mensagem":"Agendamento apagado com sucesso."}),200
-        else:
-            return jsonify({"erro": "Agendamento não encontrado, já confirmado ou você não tem permissão"}), 404
-    except Exception as e:
-        print(f"Erro ao deletar agendamento - {e}")
-        return jsonify({"erro": "Erro interno"}), 500    
+    if sucesso:
+        return jsonify({"mensagem":"Agendamento apagado com sucesso."}),200
     
-    
+    return jsonify({"erro": "Não foi possível confirmar. Verifique se o ID existe ou já foi confirmado."}), 404

@@ -1,5 +1,8 @@
 # === FUNÇÃO DE SANITIZAÇÃO E VALIDAÇÃO ===
 # Esta função é responsável por limpar e validar os dados recebidos nas requisições
+from multiprocessing import Value
+
+
 def sanitizar_e_validar_pedido(dados_brutos, is_update=False):
     """
     Valida e limpa os dados de entrada.
@@ -65,3 +68,27 @@ def sanitizar_e_validar_pedido(dados_brutos, is_update=False):
     # --- ETAPA 5: Retorno Bem-Sucedido ---
     # Retorna os dados limpos e None para erros (indicando sucesso)
     return pedido_limpo, None
+
+# Em middlewares/validators.py
+
+def identificar_e_validar_autor(headers):
+    """
+    Decide quem está tentando realizar a ação.
+    Retorna (id_limpo, tipo_autor, erro)
+    """
+    id_barbeiro = headers.get('X-Barbeiro-ID')
+    id_cliente = headers.get('X-Cliente-ID')
+
+    if id_barbeiro:
+        try:
+            return int(id_barbeiro), "barbeiro", None
+        except:
+            return None, None, "ID do Barbeiro inválido."
+    
+    if id_cliente:
+        try:
+            return int(id_cliente), "cliente", None
+        except:
+            return None, None, "ID do Cliente inválido."
+
+    return None, None, "Identificação de autor ausente (Barbeiro ou Cliente)."

@@ -65,47 +65,47 @@ def inserir_agendamento(id_cliente, data, horario, id_barbeiro, id_servico):
     finally:
         conn.close()
         
-def editar_agendamento(id_agendamento, novos_dados):
+# Em services/database_manager.py
+
+def editar_agendamento(id_agendamento, novos_dados, id_autor, tipo_autor):
     conn = get_db_connection()
-    # Verificar se novos_dados contém as chaves necessárias
-    if not all (k in novos_dados for k in ("data", "horario", "id_barbeiro", "id_servico")):
-        raise ValueError("novos_dados deve conter 'data', 'horario', 'id_barbeiro' e 'id_servico'")
+    # Define qual coluna será usada na trava de segurança
+    coluna_trava = "id_barbeiro" if tipo_autor == "barbeiro" else "id_cliente"
     
     try:
-        # Usamos 'cursor' para capturar o resultado da execução
-        cursor = conn.execute(
-            'UPDATE agendamentos SET data = ?, horario = ?, id_barbeiro = ?, id_servico = ? WHERE id = ? AND confirmado = 0',
-            (novos_dados['data'], novos_dados['horario'], novos_dados['id_barbeiro'], novos_dados['id_servico'], id_agendamento)
-        )
-        
+        query = f'''
+            UPDATE agendamentos 
+            SET data = ?, horario = ?, id_barbeiro = ?, id_servico = ? 
+            WHERE id = ? AND {coluna_trava} = ? AND confirmado = 0
+        '''
+        cursor = conn.execute(query, (
+            novos_dados['data'], novos_dados['horario'], 
+            novos_dados['id_barbeiro'], novos_dados['id_servico'],
+            id_agendamento, id_autor
+        ))
         conn.commit()
-        # Verificar se houveram linhas afetadas
-        if cursor.rowcount == 0:
-            return False # Nada foi alterado (ID não existe ou já confirmado)
-        
-        return True
+        return cursor.rowcount > 0
     except Exception as e:
-        print(f"Erro ao editar no banco: {e}")
+        print(f"Erro no banco: {e}")
         return False
     finally:
         conn.close()
 
-def deletar_agendamento(id_agendamento, id_barbeiro):
+# Em services/database_manager.py
+
+def deletar_agendamento(id_agendamento, id_autor, tipo_autor):
     conn = get_db_connection()
+    # Define a trava baseada em quem está deletando
+    coluna_trava = "id_barbeiro" if tipo_autor == "barbeiro" else "id_cliente"
+    
     try:
-        cursor = conn.execute(
-            f'DELETE FROM agendamentos WHERE id = ? AND confirmado = 0 AND id_barbeiro = ?',
-            (id_agendamento, id_barbeiro)
-        )
-        
+        # SQL Parametrizado: ID + Dono + Segurança de Status
+        sql = f'DELETE FROM agendamentos WHERE id = ? AND {coluna_trava} = ? AND confirmado = 0'
+        cursor = conn.execute(sql, (id_agendamento, id_autor))
         conn.commit()
-        # Verificar se houveram linhas afetadas
-        if cursor.rowcount == 0:
-            return False # Nada foi alterado (ID não existe ou já confirmado)
-        
-        return True
+        return cursor.rowcount > 0
     except Exception as e:
-        print(f"Erro ao deletar no banco: {e}")
+        print(f"Erro ao deletar: {e}")
         return False
     finally:
         conn.close()
@@ -114,7 +114,7 @@ def confirmar_agendamento(id_agendamento, id_barbeiro):
     conn = get_db_connection()
     try:
         cursor = conn.execute(
-            f"UPDATE agendamentos SET confirmado = 1 WHERE id = ? AND id_barbeiro = ?",
+            f"UPDATE agendamentos SET confirmado = 1 WHERE id = ? AND id_barbeiro = ? AND confirmado = 0",
             (id_agendamento, id_barbeiro)
         )
         conn.commit()
