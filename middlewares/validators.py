@@ -92,3 +92,35 @@ def identificar_e_validar_autor(headers):
             return None, None, "ID do Cliente inválido."
 
     return None, None, "Identificação de autor ausente (Barbeiro ou Cliente)."
+
+def validar_novo_cliente(dados):
+    erros = []
+    
+    # 1. Campos Obrigatórios
+    campos = ['nome', 'cpf', 'email', 'telefone']
+    for campo in campos:
+        if not dados.get(campo) or not str(dados[campo]).strip():
+            erros.append(f"O campo '{campo}' é obrigatório.")
+    
+    if erros:
+        return None, erros
+
+    # 2. Validação Básica de Comprimento (Regra de Negócio Simplificada)
+    # CPF deve ter 11 dígitos (apenas números)
+    cpf_limpo = ''.join(filter(str.isdigit, str(dados['cpf'])))
+    if len(cpf_limpo) != 11:
+        erros.append("O CPF deve conter exatamente 11 números.")
+    
+    # E-mail deve ter '@'
+    if '@' not in dados['email']:
+        erros.append("E-mail inválido.")
+
+    # 3. Sanitização
+    dados_limpos = {
+        'nome': dados['nome'].strip(),
+        'cpf': cpf_limpo,
+        'email': dados['email'].strip().lower(), # E-mail sempre minúsculo
+        'telefone': dados['telefone'].strip()
+    }
+    
+    return dados_limpos, None
